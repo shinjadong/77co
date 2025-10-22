@@ -127,7 +127,7 @@ class RuleEngine:
 
     def _match_keywords(self, merchant: str) -> Optional[str]:
         """
-        키워드 매칭
+        키워드 매칭 (우선순위 적용)
 
         Args:
             merchant: 가맹점명
@@ -137,7 +137,11 @@ class RuleEngine:
         """
         merchant_lower = merchant.lower()
 
-        # 각 카테고리별 키워드 확인
+        # 🔴 최우선 규칙: "주유소" 키워드
+        if "주유소" in merchant_lower:
+            return "차량유지비(주유)"
+
+        # 일반 카테고리별 키워드 확인
         for category, keywords in self.keyword_rules.items():
             for keyword in keywords:
                 keyword_lower = keyword.lower()
