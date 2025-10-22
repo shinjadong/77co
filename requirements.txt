@@ -1,0 +1,20 @@
+# 법인카드 사용용도 AI 자동분류 프로그램
+# Phase 1 기본 요구사항
+
+# 데이터 처리
+pandas>=2.0.0
+openpyxl>=3.1.0
+xlrd>=2.0.1  # .xls 파일 읽기
+
+# 텍스트 매칭
+rapidfuzz>=3.0.0  # Fuzzy 매칭
+
+# 설정 관리
+python-dotenv>=1.0.0
+
+# Claude API (Phase 2에서 사용)
+anthropic>=0.39.0
+
+# 테스트
+pytest>=7.4.0
+pytest-cov>=4.1.0

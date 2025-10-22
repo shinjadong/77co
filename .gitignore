@@ -1,0 +1,20 @@
+# 환경 설정
+.env
+*.pyc
+__pycache__/
+
+# 데이터 파일
+data/master_db_backup_*.csv
+data/feedback_log.csv
+output/*.csv
+output/*.xlsx
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Python
+*.egg-info/
+dist/
+build/
