@@ -67,9 +67,9 @@ class Preprocessor:
             "상호명": "가맹점명",
             "거래처": "가맹점명",
 
-            # 결제일자 변형 (우선)
-            "결제일자": "결제일자",
+            # 승인일자 변형 (우선)
             "승인일자": "승인일자",
+            "결제일자": "결제일자",
             "거래일자": "거래일자",
             "사용일자": "사용일자",
             "일자": "일자",
@@ -89,12 +89,12 @@ class Preprocessor:
 
         df = df.rename(columns=renamed_cols)
 
-        # 일자 컬럼 통일 (결제일자 우선)
+        # 일자 컬럼 통일 (승인일자 우선)
         date_col = None
-        if "결제일자" in df.columns:
-            date_col = "결제일자"
-        elif "승인일자" in df.columns:
+        if "승인일자" in df.columns:
             date_col = "승인일자"
+        elif "결제일자" in df.columns:
+            date_col = "결제일자"
         elif "거래일자" in df.columns:
             date_col = "거래일자"
         elif "사용일자" in df.columns:
@@ -102,14 +102,14 @@ class Preprocessor:
         elif "일자" in df.columns:
             date_col = "일자"
 
-        if date_col and date_col != "결제일자":
-            df["결제일자"] = df[date_col]
+        if date_col and date_col != "승인일자":
+            df["승인일자"] = df[date_col]
             # 원본 컬럼 제거 (중복 방지)
-            if date_col in df.columns and date_col != "결제일자":
+            if date_col in df.columns and date_col != "승인일자":
                 df = df.drop(columns=[date_col])
 
         # 필수 컬럼 확인
-        required_cols = ["가맹점명", "결제일자", "이용금액"]
+        required_cols = ["가맹점명", "승인일자", "이용금액"]
         missing_cols = [col for col in required_cols if col not in df.columns]
 
         if missing_cols:
@@ -242,10 +242,10 @@ class Preprocessor:
             # 정규화 적용
             result["이용금액"] = result["이용금액"].apply(lambda x: self.clean_amount(x))
 
-        # 일자 정규화 (결제일자 우선)
-        if "결제일자" in result.columns:
-            result["결제일자"] = pd.to_datetime(
-                result["결제일자"],
+        # 일자 정규화 (승인일자 우선)
+        if "승인일자" in result.columns:
+            result["승인일자"] = pd.to_datetime(
+                result["승인일자"],
                 errors='coerce'
             )
 

@@ -156,7 +156,7 @@ class FinalReviewer:
         transactions_text = ""
         for idx, row in batch_df.iterrows():
             # 일자 컬럼 확인
-            date_col = "결제일자" if "결제일자" in row else "승인일자"
+            date_col = "승인일자" if "승인일자" in row else "결제일자"
             date_value = row.get(date_col, "")
 
             transactions_text += f"""
@@ -294,8 +294,8 @@ class FinalReviewer:
         # === 1. 내부용 파일 (검토용) ===
         internal_df = pd.DataFrame()
 
-        date_col = "결제일자" if "결제일자" in reviewed_df.columns else "승인일자"
-        internal_df["결제일자"] = reviewed_df[date_col]
+        date_col = "승인일자" if "승인일자" in reviewed_df.columns else "결제일자"
+        internal_df["승인일자"] = reviewed_df[date_col]
         internal_df["가맹점명_원본"] = reviewed_df.get("가맹점명_원본", reviewed_df.get("가맹점명"))
         internal_df["가맹점명"] = reviewed_df.get("가맹점명", "")
         internal_df["이용금액"] = reviewed_df["이용금액"]
@@ -319,7 +319,7 @@ class FinalReviewer:
 
         # === 2. 외부용 파일 (제출용) - 깔끔한 4컬럼만 ⭐ ===
         clean_df = pd.DataFrame()
-        clean_df["결제일자"] = internal_df["결제일자"]
+        clean_df["승인일자"] = internal_df["승인일자"]
         clean_df["가맹점명"] = internal_df["가맹점명_원본"]
         clean_df["이용금액"] = internal_df["이용금액"]
         clean_df["사용용도"] = internal_df["사용용도"]
@@ -333,7 +333,7 @@ class FinalReviewer:
 
         # 결과 출력
         print(f"\n✅ 제출용 파일 (AI 흔적 제거): {external_path}")
-        print(f"   → 깔끔한 4컬럼: 결제일자, 가맹점명, 이용금액, 사용용도")
+        print(f"   → 깔끔한 4컬럼: 승인일자, 가맹점명, 이용금액, 사용용도")
         print(f"📊 내부 검토용 (상세 정보): {internal_path}")
         print(f"   총 거래: {len(clean_df)}건")
 
@@ -353,8 +353,8 @@ class FinalReviewer:
         Returns:
             월 (1~12)
         """
-        # 결제일자를 datetime으로 변환
-        date_col = "결제일자" if "결제일자" in df.columns else "승인일자"
+        # 승인일자를 datetime으로 변환
+        date_col = "승인일자" if "승인일자" in df.columns else "결제일자"
         dates = pd.to_datetime(df[date_col], errors='coerce')
 
         # 결측값 제거

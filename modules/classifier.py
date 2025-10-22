@@ -156,12 +156,12 @@ class CardClassifier:
                 amount = 0
 
             try:
-                date = str(row["결제일자"])
+                date = str(row["승인일자"])
             except (TypeError, KeyError):
                 date = ""
 
             context = {
-                "결제일자": date,
+                "승인일자": date,
                 "이용금액": amount
             }
 
@@ -178,7 +178,7 @@ class CardClassifier:
 
         # 컬럼 정리 (필요한 컬럼만 선택)
         output_cols = [
-            "결제일자",
+            "승인일자",
             "가맹점명_원본",
             "가맹점명",
             "이용금액",
