@@ -261,6 +261,10 @@ class FinalReviewer:
         """
         최종 확정 파일 생성
 
+        두 가지 파일 생성:
+        1. 내부용 (검토용) - 전체 컬럼 포함
+        2. 외부용 (제출용) - 깔끔한 4컬럼만 (AI 흔적 제거)
+
         Args:
             reviewed_df: 검토 완료된 DataFrame
             output_path: 출력 경로 (None이면 자동 생성)
@@ -269,51 +273,75 @@ class FinalReviewer:
         # 결제일자에서 월 추출
         month = self._extract_month(reviewed_df)
 
-        # 출력 경로 자동 생성
+        # 경로 설정
         if output_path is None:
-            output_path = Path(f"output/법인카드_({month})월_{card_number}.csv")
-        elif "{month}" in str(output_path):
-            # 경로에 {month} 플레이스홀더가 있으면 치환
-            output_path = Path(str(output_path).replace("{month}", str(month)))
-        # 최종 출력 컬럼 선택
-        output_df = pd.DataFrame()
+            base_dir = Path("output")
+            internal_dir = base_dir / "internal"
+            internal_dir.mkdir(exist_ok=True)
 
-        # 원본 정보
+            # 내부용 경로
+            internal_path = internal_dir / f"상세_{month}월_{card_number}.csv"
+
+            # 외부용 경로 (제출용)
+            external_path = base_dir / f"법인카드_({month})월_{card_number}.csv"
+        else:
+            # 사용자 지정 경로
+            internal_dir = output_path.parent / "internal"
+            internal_dir.mkdir(exist_ok=True)
+            internal_path = internal_dir / f"상세_{output_path.stem}.csv"
+            external_path = output_path
+
+        # === 1. 내부용 파일 (검토용) ===
+        internal_df = pd.DataFrame()
+
         date_col = "결제일자" if "결제일자" in reviewed_df.columns else "승인일자"
-        output_df["결제일자"] = reviewed_df[date_col]
-        output_df["가맹점명"] = reviewed_df["가맹점명_원본"]
-        output_df["이용금액"] = reviewed_df["이용금액"]
+        internal_df["결제일자"] = reviewed_df[date_col]
+        internal_df["가맹점명_원본"] = reviewed_df.get("가맹점명_원본", reviewed_df.get("가맹점명"))
+        internal_df["가맹점명"] = reviewed_df.get("가맹점명", "")
+        internal_df["이용금액"] = reviewed_df["이용금액"]
+        internal_df["사용용도"] = reviewed_df["최종사용용도"]
+        internal_df["신뢰도"] = reviewed_df.get("최종신뢰도", reviewed_df.get("신뢰도", 1.0))
+        internal_df["확정방법"] = reviewed_df.get("최종확정", "자동확정")
 
-        # 최종 확정 사용용도
-        output_df["사용용도"] = reviewed_df["최종사용용도"]
+        # 라벨 출처
+        if "라벨출처" in reviewed_df.columns:
+            internal_df["라벨출처"] = reviewed_df["라벨출처"]
 
-        # 메타 정보
-        output_df["신뢰도"] = reviewed_df["최종신뢰도"]
-        output_df["확정방법"] = reviewed_df["최종확정"]
-
-        # 검토 의견 (있는 경우만)
+        # 검토 의견
         if "검토의견" in reviewed_df.columns:
-            has_opinion = reviewed_df["검토의견"].notna() & (reviewed_df["검토의견"] != "")
-            if has_opinion.any():
-                output_df["검토의견"] = reviewed_df["검토의견"]
+            internal_df["검토의견"] = reviewed_df["검토의견"]
 
         # 결측값 제거
-        output_df = output_df[output_df["가맹점명"].notna()].copy()
+        internal_df = internal_df[internal_df["가맹점명_원본"].notna()].copy()
 
-        # 저장
-        if output_path.suffix == ".csv":
-            output_df.to_csv(output_path, index=False, encoding="utf-8-sig")
-        elif output_path.suffix in [".xlsx", ".xls"]:
-            output_df.to_excel(output_path, index=False)
+        # 내부용 저장
+        internal_df.to_csv(internal_path, index=False, encoding="utf-8-sig")
 
-        print(f"\n최종 파일 생성: {output_path}")
-        print(f"  총 거래: {len(output_df)}건")
+        # === 2. 외부용 파일 (제출용) - 깔끔한 4컬럼만 ⭐ ===
+        clean_df = pd.DataFrame()
+        clean_df["결제일자"] = internal_df["결제일자"]
+        clean_df["가맹점명"] = internal_df["가맹점명_원본"]
+        clean_df["이용금액"] = internal_df["이용금액"]
+        clean_df["사용용도"] = internal_df["사용용도"]
+
+        # 결측값 최종 제거
+        clean_df = clean_df[clean_df["가맹점명"].notna()].copy()
+
+        # 외부용 저장 (CSV + XLSX)
+        clean_df.to_csv(external_path, index=False, encoding="utf-8-sig")
+        clean_df.to_excel(external_path.with_suffix('.xlsx'), index=False)
+
+        # 결과 출력
+        print(f"\n✅ 제출용 파일 (AI 흔적 제거): {external_path}")
+        print(f"   → 깔끔한 4컬럼: 결제일자, 가맹점명, 이용금액, 사용용도")
+        print(f"📊 내부 검토용 (상세 정보): {internal_path}")
+        print(f"   총 거래: {len(clean_df)}건")
 
         # 통계
-        print("\n[확정 방법별 통계]")
-        print(output_df["확정방법"].value_counts())
+        print("\n[확정 방법별 통계 (내부용)]")
+        print(internal_df["확정방법"].value_counts())
 
-        return output_df
+        return clean_df
 
     def _extract_month(self, df: pd.DataFrame) -> int:
         """
