@@ -102,8 +102,11 @@ class Preprocessor:
         elif "일자" in df.columns:
             date_col = "일자"
 
-        if date_col:
+        if date_col and date_col != "결제일자":
             df["결제일자"] = df[date_col]
+            # 원본 컬럼 제거 (중복 방지)
+            if date_col in df.columns and date_col != "결제일자":
+                df = df.drop(columns=[date_col])
 
         # 필수 컬럼 확인
         required_cols = ["가맹점명", "결제일자", "이용금액"]
@@ -111,6 +114,9 @@ class Preprocessor:
 
         if missing_cols:
             raise ValueError(f"필수 컬럼 누락: {missing_cols}")
+
+        # 중복 컬럼 제거
+        df = df.loc[:, ~df.columns.duplicated()]
 
         # 필요한 컬럼만 선택
         return df[required_cols]
@@ -229,7 +235,12 @@ class Preprocessor:
 
         # 금액 정규화
         if "이용금액" in result.columns:
-            result["이용금액"] = result["이용금액"].apply(self.clean_amount)
+            # 중복 컬럼 제거
+            if isinstance(result["이용금액"], pd.DataFrame):
+                result["이용금액"] = result["이용금액"].iloc[:, 0]
+
+            # 정규화 적용
+            result["이용금액"] = result["이용금액"].apply(lambda x: self.clean_amount(x))
 
         # 일자 정규화 (결제일자 우선)
         if "결제일자" in result.columns:
